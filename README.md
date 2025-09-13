@@ -1,9 +1,7 @@
 # Welcome to Chain Reactors Side-Shift project
 
 
-## How can I edit this code?
-
-There are several ways of editing your application.
+## How can I install this?
 
 **Use your preferred IDE**
 
