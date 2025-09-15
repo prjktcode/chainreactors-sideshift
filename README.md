@@ -1,51 +1,64 @@
-# Welcome to Chain Reactors Side-Shift project
+# **Integrating SideShift API into Our Portfolio Manager**
 
+## **Key API Steps**
 
-## How can I install this?
+### **Create an Account**
+- Generate and store the **x-sideshift-secret** (private key) and **affiliateId** for API authentication.
 
-**Use your preferred IDE**
+### **Request a Quote**
+- Use **/v2/quotes** endpoint (**POST**) to get a quote for converting assets across chains.
+- You provide parameters like **depositCoin**, **depositNetwork**, **settleCoin**, **settleNetwork**, and **depositAmount** or **settleAmount**.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### **Create a Shift (Fixed or Variable)**
+- **Fixed Rate:** Use **/v2/shifts/fixed** with **quoteId**, **settleAddress**, and IDs to lock in the rate for up to 15 minutes.
+- **Variable Rate:** Use **/v2/shifts/variable** for flexible amounts, valid up to 7 days.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### **Monitor Shift Status**
+- Poll **/v2/shifts/{shiftId}** to follow the lifecycle (e.g., **waiting**, **pending**, **processing**, **settled**).
 
-Follow these steps:
+### **Handle Edge Cases**
+- Incorporate logic for deposit memos, refunds, and multiple deposits.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## **Prototype Architecture**
 
-# Step 3: Install the necessary dependencies.
-npm i
+Here’s how to layer the SideShift API into our AI-driven portfolio manager:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### **Backend (Python + FastAPI)**
 
-**Edit a file directly in GitHub**
+**Endpoints to build:**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- **POST /api/quote**
+    - **Inputs:** source coin, target coin, amount, target chain, goals
+    - **Actions:** calls **/v2/quotes**, returns **quoteId**
+- **POST /api/shift**
+    - **Inputs:** **quoteId**, wallet **settleAddress**
+    - **Actions:** calls **/v2/shifts/fixed**, returns **shiftId** + deposit address
+- **GET /api/status/{shiftId}**
+    - **Actions:** returns shift lifecycle status by polling **/v2/shifts/{shiftId}**
+- **POST /api/suggest-swap**
+    - **Inputs:** current holdings, target allocation
+    - **Outputs:** recommended swaps (can be heuristic or LLM-powered)
 
-**Use GitHub Codespaces**
+**Flow Example:**
+1. User’s strategy triggers need to rebalance (e.g. too much ETH).
+2. **/suggest-swap** suggests: “Swap 0.5 ETH → 0.3 BTC, 0.2 USDT.”
+3. For each swap:
+    - Call **/api/quote**, receive **quoteId**
+    - Call **/api/shift** to get deposit address
+4. Backend monitors until settled, then updates the dashboard.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### **Frontend (React + Ethers.js or WalletConnect)**
 
-## What technologies are used for this project?
+**Dashboard View:**
+- Connect wallet
+- Display current holdings and target allocations
+- Button: “**Rebalance Portfolio**”
+- Show recommended swap plan and accept/confirm before executing
+- After execution, show deposit address and status updates
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
+**User Experience:**
+- **Minimal interface**—focus on clarity and trust
+- Show swap reasoning (e.g., “Reducing ETH exposure to lower volatility risk”)
+- Provide easy support access (e.g., link to SideShift with shift ID)
